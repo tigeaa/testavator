@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Avatar Motion Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="avatar-canvas"></canvas>
+    </div>
+
+    <div id="controls">
+        <input type="text" id="text-input" placeholder="テキスト入力...">
+        <button id="test-speech">音声テスト</button>
+        <button id="test-gesture">ジェスチャー 一時停止/再開</button>
+        <button id="test-expression">表情テスト</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
