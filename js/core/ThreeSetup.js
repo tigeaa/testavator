@@ -40,19 +40,8 @@ export function setupScene() {
   // 5. 更新対象オブジェクトの配列
   const updatables = [];
 
-  // 6. アニメーションループ
+  // 6. アニメーションループのためのClock
   const clock = new THREE.Clock();
-  const animate = () => {
-    requestAnimationFrame(animate);
-    const deltaTime = clock.getDelta();
-
-    // updatables配列内の全オブジェクトのupdateメソッドを呼ぶ
-    for (const object of updatables) {
-      object.update(deltaTime);
-    }
-
-    renderer.render(scene, camera);
-  };
 
   // 7. ウィンドウリサイズへの対応
   window.addEventListener('resize', () => {
@@ -61,5 +50,5 @@ export function setupScene() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  return { scene, camera, renderer, animate, updatables };
+  return { scene, camera, renderer, clock, updatables };
 }

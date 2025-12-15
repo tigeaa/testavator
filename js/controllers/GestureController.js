@@ -14,7 +14,7 @@ export class GestureController {
     this.bones = this.findBones();
 
     // ジェスチャーアニメーションを自動的に作成して再生
-    this.createAndPlayWavingAnimation();
+    this.wavingAction = this.createAndPlayWavingAnimation();
   }
 
   /**
@@ -99,5 +99,6 @@ export class GestureController {
 
     action.setLoop(THREE.LoopRepeat).play();
     console.log('ジェスチャーアニメーションを開始しました。');
+    return action;
   }
 }
