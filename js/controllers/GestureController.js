@@ -25,15 +25,16 @@ export class GestureController {
     const bones = {};
     this.avatar.traverse((object) => {
       if (object.isBone) {
-        if (object.name === 'RightArm') {
+        // Prefixed bone names for Ready Player Me avatar
+        if (object.name === 'mixamorigRightArm') {
           bones['RightArm'] = object;
-        } else if (object.name === 'LeftArm') {
+        } else if (object.name === 'mixamorigLeftArm') {
           bones['LeftArm'] = object;
         }
       }
     });
     if (!bones['RightArm'] || !bones['LeftArm']) {
-      console.error('腕のボーンが見つかりませんでした。ジェスチャーは再生されません。');
+      console.error('Arm bones not found. Gestures will not be played.');
     }
     return bones;
   }
@@ -53,19 +54,19 @@ export class GestureController {
     const rightArmTracks = [
       // 1. Z軸回転: 腕を上げる (0 -> 1秒で -1.5 rad)
       new THREE.NumberKeyframeTrack(
-        'RightArm.rotation[z]',
+        'mixamorigRightArm.rotation[z]',
         [0, 1],
         [0, -1.5]
       ),
       // 2. Y軸回転: 腕を横に広げる (0 -> 1秒で -0.5 rad)
       new THREE.NumberKeyframeTrack(
-        'RightArm.rotation[y]',
+        'mixamorigRightArm.rotation[y]',
         [0, 1],
         [0, -0.5]
       ),
       // 3. X軸回転: 腕を前後に振る (1 -> 4秒で -0.5 -> 0.5 -> 0)
       new THREE.NumberKeyframeTrack(
-        'RightArm.rotation[x]',
+        'mixamorigRightArm.rotation[x]',
         [1, 2, 3, 4],
         [0, -0.5, 0.5, 0]
       ),
@@ -75,19 +76,19 @@ export class GestureController {
     const leftArmTracks = [
        // 1. Z軸回転: 腕を上げる (0 -> 1秒で 1.5 rad)
        new THREE.NumberKeyframeTrack(
-        'LeftArm.rotation[z]',
+        'mixamorigLeftArm.rotation[z]',
         [0, 1],
         [0, 1.5]
       ),
       // 2. Y軸回転: 腕を横に広げる (0 -> 1秒で 0.5 rad)
       new THREE.NumberKeyframeTrack(
-        'LeftArm.rotation[y]',
+        'mixamorigLeftArm.rotation[y]',
         [0, 1],
         [0, 0.5]
       ),
       // 3. X軸回転: 腕を前後に振る (1 -> 4秒で -0.5 -> 0.5 -> 0)
       new THREE.NumberKeyframeTrack(
-        'LeftArm.rotation[x]',
+        'mixamorigLeftArm.rotation[x]',
         [1, 2, 3, 4],
         [0, -0.5, 0.5, 0]
       ),

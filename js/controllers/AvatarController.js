@@ -3,6 +3,20 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GestureController } from './GestureController.js';
 
 /**
+ * Animation clip to skeleton matching utility
+ * @param {THREE.AnimationClip} clip - The animation clip to retarget.
+ * @returns {THREE.AnimationClip} - The retargeted animation clip.
+ */
+function retargetAnimation(clip) {
+    const newTracks = clip.tracks.map(track => {
+        const nodeName = track.name.split('.')[0];
+        const newTrackName = `mixamorig${nodeName}.${track.name.split('.').slice(1).join('.')}`;
+        return new track.constructor(newTrackName, track.times, track.values);
+    });
+    return new THREE.AnimationClip(clip.name, clip.duration, newTracks);
+}
+
+/**
  * アバターのリップシンク、表情、アニメーション全体を制御する中核クラス
  */
 export class AvatarController {
@@ -30,8 +44,18 @@ export class AvatarController {
     this.walkTarget = null;
     this.onWalkFinish = null;
 
-    // 5. 新しいアニメーションを非同期で読み込む
-    this.loadAnimations();
+    // 5. 準備完了フラグ
+    this.isReady = false;
+  }
+
+  /**
+   * コントローラーを非同期で初期化します。
+   * FBXアニメーションの読み込みが完了するまで待機します。
+   */
+  async init() {
+    await this.loadAnimations();
+    this.isReady = true;
+    console.log('✅ AvatarControllerの準備が完了しました。');
   }
 
   /**
@@ -47,28 +71,38 @@ export class AvatarController {
   }
 
   /**
-   * 歩行、着席、起立のアニメーションを非同期で読み込みます。
+   * FBXアニメーションを非同期で読み込み、アニメーションアクションを準備します。
+   * @returns {Promise<void>} すべてのアニメーションの読み込みが完了したときに解決されるPromise。
    */
   async loadAnimations() {
     const loader = new FBXLoader();
-    const animFiles = {
+    const animationPaths = {
       walking: 'assets/animations/walking.fbx',
       sitting: 'assets/animations/sitting.fbx',
-      standingUp: 'assets/animations/standing_up.fbx',
+      standing_up: 'assets/animations/standing_up.fbx',
     };
 
-    try {
-      for (const [name, path] of Object.entries(animFiles)) {
-        const fbx = await loader.loadAsync(path);
-        const action = this.mixer.clipAction(fbx.animations[0]);
-        action.setLoop(name === 'walking' ? THREE.LoopRepeat : THREE.LoopOnce);
-        action.clampWhenFinished = (name !== 'walking');
-        this.animations[name] = action;
-      }
-      console.log('✅ 追加アニメーションの読み込みが完了しました。');
-    } catch (error) {
-      console.error('❌ アニメーションの読み込みに失敗しました:', error);
-    }
+    const promises = Object.entries(animationPaths).map(([name, path]) => {
+      return new Promise((resolve, reject) => {
+        loader.load(path, (fbx) => {
+          const originalClip = fbx.animations[0];
+          const retargetedClip = retargetAnimation(originalClip);
+          const action = this.mixer.clipAction(retargetedClip);
+
+          action.setLoop(name === 'walking' ? THREE.LoopRepeat : THREE.LoopOnce);
+          action.clampWhenFinished = true;
+          this.animations[name] = action;
+          console.log(`✅ ${name} animation loaded and retargeted.`);
+          resolve();
+        }, undefined, (error) => {
+          console.error(`❌ ${name}アニメーションの読み込みに失敗:`, error);
+          reject(error);
+        });
+      });
+    });
+
+    await Promise.all(promises);
+    console.log('✅ すべてのカスタムアニメーションの読み込みが完了しました。');
   }
 
   /**
@@ -115,20 +149,20 @@ export class AvatarController {
    */
   sitDown(chair) {
     this.state = 'sitting_inprogress';
+    const sitAction = this.animations.sitting;
+    sitAction.setLoop(THREE.LoopOnce);
+    sitAction.clampWhenFinished = true;
+
     this.fadeToAction('sitting', 0.5);
 
-    // アニメーションが完了したら、最終的な位置と向きを調整
     const onFinished = (e) => {
-      if (e.action === this.animations.sitting) {
-        // 最終的な着席位置を椅子の座面に合わせる
+      if (e.action === sitAction) {
+        sitAction.stop();
         const finalPosition = chair.position.clone();
-        finalPosition.y = this.avatar.position.y; // Y座標は現在の高さを維持
-        finalPosition.z -= 0.1; // 少しだけ椅子にめり込ませて自然に見せる
+        finalPosition.y += 0.5;
+        finalPosition.z -= 0.1;
         this.avatar.position.copy(finalPosition);
-
-        // 正面を向くように調整
-        const lookAtTarget = new THREE.Vector3(0, this.avatar.position.y, 0);
-        this.avatar.lookAt(lookAtTarget);
+        this.avatar.rotation.y = 0;
 
         this.state = 'sitting';
         this.mixer.removeEventListener('finished', onFinished);
@@ -142,14 +176,17 @@ export class AvatarController {
    */
   standUp() {
     this.state = 'standing_inprogress';
-    this.fadeToAction('standingUp', 0.5);
+    const standAction = this.animations.standing_up;
+    standAction.setLoop(THREE.LoopOnce);
+    standAction.clampWhenFinished = true;
 
-    // アニメーションが終了したときのリスナーを一度だけ設定
+    this.fadeToAction('standing_up', 0.5);
+
     const onFinished = (e) => {
-      if (e.action === this.animations.standingUp) {
+      if (e.action === standAction) {
+        standAction.stop();
         this.state = 'idle';
         this.fadeToAction('waving', 0.5);
-        // リスナーを解除
         this.mixer.removeEventListener('finished', onFinished);
       }
     };
@@ -219,11 +256,15 @@ export class AvatarController {
         // ターゲットに到着
         this.avatar.position.copy(this.walkTarget);
         this.walkTarget = null;
-        this.state = 'idle';
-        this.fadeToAction('waving', 0.5);
+
+        // onWalkFinishコールバックが存在すれば実行
         if (this.onWalkFinish) {
           this.onWalkFinish();
           this.onWalkFinish = null;
+        } else {
+          // コールバックがなければアイドル状態に戻る
+          this.state = 'idle';
+          this.fadeToAction('waving', 0.5);
         }
       }
     }

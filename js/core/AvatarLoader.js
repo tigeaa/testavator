@@ -15,35 +15,28 @@ export async function loadAvatar(scene) {
 
   // アバターのURLリスト。最初のURLで失敗した場合、次のURLを試します。
   const avatarUrls = [
+    'https://models.readyplayer.me/658d8399238313d3504107e5.glb?morphTargets=ARKit', // Known good URL
+    'https://models.readyplayer.me/6460d95f9ae10f45a49942a5.glb?morphTargets=ARKit',
     `https://models.readyplayer.me/63e569fb6f759e4d1df880a2.glb${morphTargets}`,
-    `https://models.readyplayer.me/6185a4acfb622cf1cdc49348.glb${morphTargets}` // This one is broken but kept as a fallback example
   ];
 
-  for (const url of avatarUrls) {
+  for (let i = 0; i < avatarUrls.length; i++) {
+    const url = avatarUrls[i];
     try {
-      console.log(`アバターを読み込み中: ${url}`);
+      console.log(`[Attempt ${i+1}/${avatarUrls.length}] Loading avatar from: ${url}`);
       const gltf = await loader.loadAsync(url, (xhr) => {
-        // 読み込み進捗をコンソールに出力
         const percentComplete = (xhr.loaded / xhr.total) * 100;
-        console.log(`読み込み中... ${Math.round(percentComplete)}%`);
+        console.log(`Loading... ${Math.round(percentComplete)}%`);
       });
 
       const avatar = gltf.scene;
-
-      // アバターをシーンの中央やや下に配置
       avatar.position.y = -0.9;
-
-      // アバターのサイズや向きを調整（必要に応じて）
-      // avatar.scale.set(1, 1, 1);
-      // avatar.rotation.y = Math.PI; // 後ろ向きの場合など
-
       scene.add(avatar);
-      console.log('✅ アバターの読み込みに成功しました。');
-      return avatar; // 成功したらアバターオブジェクトを返す
+      console.log('✅ Avatar loaded successfully.');
+      return avatar;
 
     } catch (error) {
-      console.warn(`アバターの読み込みに失敗しました: ${url}`, error);
-      // 次のURLへループが続く
+      console.error(`[Attempt ${i+1}/${avatarUrls.length}] Failed to load avatar from: ${url}`, error);
     }
   }
 
