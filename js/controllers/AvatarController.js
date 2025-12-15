@@ -9,18 +9,29 @@ import { GestureController } from './GestureController.js';
  */
 function retargetAnimation(clip) {
   const newTracks = clip.tracks.map(track => {
-    const nodeName = track.name.split('.')[0];
-    const propertyPart = track.name.split('.').slice(1).join('.');
+    // トラック名からボーン名とプロパティを分離
+    // 例: "mixamorig:Hips.position" -> nodeName="mixamorig:Hips", propertyPart="position"
+    const trackNameParts = track.name.split('.');
+    let nodeName = trackNameParts[0];
+    const propertyPart = trackNameParts.slice(1).join('.');
 
-    // 既にmixamorigプレフィックスがある場合はそのまま使用
-    let newTrackName;
-    if (nodeName.startsWith('mixamorig')) {
-      newTrackName = `${nodeName}.${propertyPart}`;
-    } else {
-      newTrackName = `mixamorig${nodeName}.${propertyPart}`;
+    // 1. 名前空間(mixamorig:など)を除去して純粋なボーン名にする
+    // "mixamorig:Hips" -> "Hips"
+    // "Hips" -> "Hips"
+    if (nodeName.includes(':')) {
+      nodeName = nodeName.split(':').pop();
     }
 
-    console.log(`[Retarget] ${track.name} -> ${newTrackName}`);
+    // 2. mixamorigプレフィックス(コロンなし)を付与
+    // "Hips" -> "mixamorigHips"
+    // "mixamorigHips" -> "mixamorigHips" (既に付いている場合)
+    if (!nodeName.startsWith('mixamorig')) {
+      nodeName = `mixamorig${nodeName}`;
+    }
+
+    const newTrackName = `${nodeName}.${propertyPart}`;
+
+    // console.log(`[Retarget] ${track.name} -> ${newTrackName}`);
     return new track.constructor(newTrackName, track.times, track.values);
   });
   return new THREE.AnimationClip(clip.name, clip.duration, newTracks);
