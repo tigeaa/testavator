@@ -27,7 +27,7 @@ export function setupScene() {
     0.1, // Near
     1000 // Far
   );
-  camera.position.set(0, 0.5, 2);
+  camera.position.set(0, 0.5, 3);
 
   // 4. ライティングのセットアップ
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);

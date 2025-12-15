@@ -23,10 +23,25 @@ async function main() {
 
         await avatarController.init();
 
+        // 椅子参照をコントローラーに設定
+        avatarController.chair = chair;
+
         console.log('✅ Avatar and controller initialized.');
 
-        // 4. 直接座るアニメーションをテスト
-        avatarController.sitDown(chair);
+        // 「座る」ボタンのイベントリスナー
+        document.getElementById('toggle-sit').addEventListener('click', () => {
+            if (avatarController.state === 'idle') {
+                // 歩いて椅子まで移動し、到着後に座る
+                const targetPos = chair.position.clone();
+                targetPos.y = avatar.position.y; // Y座標はアバターの高さを維持
+                avatarController.walkTo(targetPos, () => {
+                    avatarController.sitDown(chair);
+                });
+            } else if (avatarController.state === 'sitting') {
+                // 座っている状態から立ち上がる
+                avatarController.standUp();
+            }
+        });
 
     } catch (error) {
         console.error('❌ Failed to initialize avatar and controller.', error);
