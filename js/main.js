@@ -8,7 +8,7 @@ import { AvatarController } from './controllers/AvatarController.js';
  */
 async function main() {
     // 1. Three.js環境をセットアップ
-    const { scene, renderer, clock, updatables } = setupScene();
+    const { scene, camera, renderer, clock, updatables } = setupScene();
 
     // 2. 椅子をダミーで作成
     const chair = new THREE.Object3D();
