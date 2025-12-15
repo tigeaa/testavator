@@ -8,12 +8,22 @@ import { GestureController } from './GestureController.js';
  * @returns {THREE.AnimationClip} - The retargeted animation clip.
  */
 function retargetAnimation(clip) {
-    const newTracks = clip.tracks.map(track => {
-        const nodeName = track.name.split('.')[0];
-        const newTrackName = `mixamorig${nodeName}.${track.name.split('.').slice(1).join('.')}`;
-        return new track.constructor(newTrackName, track.times, track.values);
-    });
-    return new THREE.AnimationClip(clip.name, clip.duration, newTracks);
+  const newTracks = clip.tracks.map(track => {
+    const nodeName = track.name.split('.')[0];
+    const propertyPart = track.name.split('.').slice(1).join('.');
+
+    // 既にmixamorigプレフィックスがある場合はそのまま使用
+    let newTrackName;
+    if (nodeName.startsWith('mixamorig')) {
+      newTrackName = `${nodeName}.${propertyPart}`;
+    } else {
+      newTrackName = `mixamorig${nodeName}.${propertyPart}`;
+    }
+
+    console.log(`[Retarget] ${track.name} -> ${newTrackName}`);
+    return new track.constructor(newTrackName, track.times, track.values);
+  });
+  return new THREE.AnimationClip(clip.name, clip.duration, newTracks);
 }
 
 /**
@@ -148,15 +158,26 @@ export class AvatarController {
    * @param {THREE.Object3D} chair - 椅子のオブジェクト
    */
   sitDown(chair) {
+    console.log('[sitDown] Called, current state:', this.state);
+    console.log('[sitDown] animations.sitting:', this.animations.sitting);
+
+    if (!this.animations.sitting) {
+      console.error('[sitDown] sitting animation not loaded!');
+      return;
+    }
+
     this.state = 'sitting_inprogress';
     const sitAction = this.animations.sitting;
     sitAction.setLoop(THREE.LoopOnce);
     sitAction.clampWhenFinished = true;
 
+    console.log('[sitDown] Calling fadeToAction("sitting")');
     this.fadeToAction('sitting', 0.5);
 
     const onFinished = (e) => {
+      console.log('[sitDown] mixer finished event:', e.action.getClip().name);
       if (e.action === sitAction) {
+        console.log('[sitDown] sitAction finished, setting final position');
         sitAction.stop();
         const finalPosition = chair.position.clone();
         finalPosition.y += 0.5;
