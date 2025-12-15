@@ -10,24 +10,13 @@ import { GestureController } from './GestureController.js';
 function retargetAnimation(clip) {
   const newTracks = clip.tracks.map(track => {
     // トラック名からボーン名とプロパティを分離
-    // 例: "mixamorig:Hips.position" -> nodeName="mixamorig:Hips", propertyPart="position"
     const trackNameParts = track.name.split('.');
     let nodeName = trackNameParts[0];
     const propertyPart = trackNameParts.slice(1).join('.');
 
-    // 1. 名前空間(mixamorig:など)を除去して純粋なボーン名にする
-    // "mixamorig:Hips" -> "Hips"
-    // "Hips" -> "Hips"
-    if (nodeName.includes(':')) {
-      nodeName = nodeName.split(':').pop();
-    }
-
-    // 2. mixamorigプレフィックス(コロンなし)を付与
-    // "Hips" -> "mixamorigHips"
-    // "mixamorigHips" -> "mixamorigHips" (既に付いている場合)
-    if (!nodeName.startsWith('mixamorig')) {
-      nodeName = `mixamorig${nodeName}`;
-    }
+    // mixamorig: または mixamorig (コロンなし) を削除して、純粋なボーン名にする
+    // Ready Player MeのGLBは通常プレフィックスなしのボーン名 (Hips, Spine, etc.)
+    nodeName = nodeName.replace(/^mixamorig:?/, '');
 
     const newTrackName = `${nodeName}.${propertyPart}`;
 
@@ -46,6 +35,15 @@ export class AvatarController {
    */
   constructor(avatar) {
     this.avatar = avatar;
+
+    // [DEBUG] アバターのボーン名を確認
+    console.log('[AvatarController] Avatar Bone Names:');
+    this.avatar.traverse((child) => {
+      if (child.isBone) {
+        console.log(`- ${child.name}`);
+      }
+    });
+
     this.isTalking = false;
     this.morphTargetMeshes = [];
     this.findMorphTargetMeshes();
